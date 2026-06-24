@@ -1,0 +1,16 @@
+{
+  "name": "RDO Operacional Tenergy",
+  "short_name": "RDO Tenergy",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#22703f",
+  "theme_color": "#22703f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo_tenergy.png",
+      "sizes": "192 x 192",
+      "type": "image/png"
+    }
+  ]
+}
