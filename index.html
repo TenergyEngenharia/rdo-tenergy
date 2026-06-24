@@ -29,7 +29,7 @@
 
     <div class="card">
         <h2>1. IDENTIFICAÇÃO</h2>
-        <label>Local da Obra (Sigla exatamente igual ao Excel):</label>
+        <label>Local da Obra Sigla igual a excel:</label>
         <input type="text" id="local_obra" placeholder="Ex: SAU01" oninput="salvarOffline()">
 
         <label>Data da Obra:</label>
@@ -40,7 +40,7 @@
     </div>
 
     <div class="card">
-        <h2>3. CHECKLIST INICIAL (Escolha Única)</h2>
+        <h2>3. CHECKLIST INICIAL</h2>
         <label>Condições Climáticas:</label>
         <select id="clima" onchange="salvarOffline()">
             <option value="Ensolarado">Ensolarado</option>
@@ -68,7 +68,7 @@
     </div>
 
     <div class="card">
-        <h2>NARRATIVAS E PREVISÃO</h2>
+        <h2>REGISTRO DE ATIVIDADES</h2>
         <label>Ocorrências Registradas:</label>
         <textarea id="ocorrencias" rows="3" oninput="salvarOffline()">Não foram registradas ocorrências no período.</textarea>
 
@@ -82,21 +82,24 @@
     <button class="btn btn-export" onclick="exportarParaExcel()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
 
     <script>
-        // Lista oficial de atividades sincronizada rigidamente com o seu Excel
+        // Registrar o ativador Offline (Service Worker)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('serviceWorker.js');
+        }
+
         const atividades = [
             "Mobilização", "Abertura e Preparo do solo", "Instalação de eletrodutos", 
             "Base de concreto/suporte carregadores", "Fixação dos carregadores", 
             "Conexões elétricas", "Configuração e startup ", "Recomposição do solo"
         ];
 
-        // Renderiza a matriz de atividades na tela de forma elegante
         const container = document.getElementById('container-atividades');
         atividades.forEach((ativ, index) => {
             let html = `
                 <div class="matrix-row">
                     <div class="matrix-title">${ativ}</div>
                     <select id="ativ_${index}" onchange="salvarOffline()">
-                        <option value="Não concluída">Não concluída</option>
+                        <option value="Não iniciada">Não iniciada</option>
                         <option value="Em andamento">Em andamento</option>
                         <option value="Concluída">Concluída</option>
                         <option value="Interrompida">Interrompida</option>
@@ -105,7 +108,6 @@
             container.innerHTML += html;
         });
 
-        // Grava os dados na memória do telemóvel a cada caractere digitado (Segurança 100% Offline)
         function salvarOffline() {
             let dados = {
                 local_obra: document.getElementById('local_obra').value,
@@ -122,7 +124,6 @@
             localStorage.setItem('tenergy_rdo_cache', JSON.stringify(dados));
         }
 
-        // Recupera os dados caso o utilizador feche o app sem querer
         window.onload = function() {
             let cache = localStorage.getItem('tenergy_rdo_cache');
             if(cache) {
@@ -135,25 +136,25 @@
                 document.getElementById('interferencias').value = dados.interferencias || '';
                 document.getElementById('previsao').value = dados.previsao || '';
                 
-                // Trata os radios
                 document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
                 document.querySelector(`input[name="seguranca"][value="${dados.seguranca}"]`).checked = true;
 
-                // Trata as atividades
                 if(dados.status_ativ) {
                     dados.status_ativ.forEach((val, idx) => {
-                        if(document.getElementById(`ativ_${idx}`)) document.getElementById(`ativ_${idx}`).value = val;
+                        if(document.getElementById(`ativ_${idx}`)) {
+                            // Converte caches antigos de "Não concluída" para "Não iniciada" automaticamente
+                            document.getElementById(`ativ_${idx}`).value = (val === "Não concluída") ? "Não iniciada" : val;
+                        }
                     });
                 }
             }
         };
 
-        // COMPILA OS DADOS E GERA O ARQUIVO COMPATÍVEL COM O SEU EXCEL MASTER
         function exportarParaExcel() {
             let local = document.getElementById('local_obra').value.toUpperCase();
             if(!local) { alert("Por favor, digite a sigla da Obra (Ex: SAU01) antes de exportar!"); return; }
 
-            // Cabeçalhos idênticos à nova estrutura que o seu Excel lê
+            // Cabeçalhos compatíveis com o leitor do Excel
             let csvHeaders = ["Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", "Interferências a serem tratadas", "Atividades previstas para o próximo dia"];
             let csvValues = [
                 document.getElementById('data_obra').value,
@@ -167,25 +168,22 @@
                 `"${document.getElementById('previsao').value.replace(/"/g, '""')}"`
             ];
 
-            // Injeta as colunas das atividades com a marcação "##### " exigida pela macro do Excel
             atividades.forEach((ativ, idx) => {
                 csvHeaders.push(`##### ${ativ}`);
                 csvValues.push(document.getElementById(`ativ_${idx}`).value);
             });
 
-            // Monta o ficheiro CSV em formato string (separado por vírgulas)
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
                 + csvHeaders.join(",") + "\n" 
                 + csvValues.join(",");
 
-            // Cria o gatilho invisível de download no telemóvel
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             link.setAttribute("download", `RDO_${local}_${document.getElementById('data_obra').value}.csv`);
             document.body.appendChild(link);
             
-            link.click(); // Faz o download do ficheiro para a pasta do telemóvel
+            link.click();
             document.body.removeChild(link);
         }
     </script>
