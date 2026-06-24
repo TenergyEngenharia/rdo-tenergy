@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDO Campo - Tenergy</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --verde: #22703f; }
+        body { font-family: 'Aptos', Arial, sans-serif; margin: 0; padding: 15px; background: #f5f5f5; color: #333; }
+        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { color: var(--verde); margin-top: 0; border-bottom: 2px solid var(--verde); padding-bottom: 5px; font-size: 1.2rem; }
+        label { font-weight: bold; display: block; margin: 10px 0 5px; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        .radio-group { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .radio-option { display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee; }
+        .radio-option input { width: 20px; height: 20px; }
+        .matrix-row { background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; }
+        .matrix-title { font-weight: bold; color: #555; margin-bottom: 5px; }
+        .btn { background: var(--verde); color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-export { background: #007bff; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1 style="color: var(--verde); text-align: center; margin: 0; font-size: 1.5rem;">TENERGY - RDO OFFLINE</h1>
+    </div>
+
+    <div class="card">
+        <h2>1. IDENTIFICAÇÃO</h2>
+        <label>Local da Obra (Sigla exatamente igual ao Excel):</label>
+        <input type="text" id="local_obra" placeholder="Ex: SAU01" oninput="salvarOffline()">
+
+        <label>Data da Obra:</label>
+        <input type="date" id="data_obra" onchange="salvarOffline()">
+
+        <label>Engenheiro Responsável:</label>
+        <input type="text" id="engenheiro" placeholder="Nome do responsável" oninput="salvarOffline()">
+    </div>
+
+    <div class="card">
+        <h2>3. CHECKLIST INICIAL (Escolha Única)</h2>
+        <label>Condições Climáticas:</label>
+        <select id="clima" onchange="salvarOffline()">
+            <option value="Ensolarado">Ensolarado</option>
+            <option value="Nublado">Nublado</option>
+            <option value="Chuva">Chuva</option>
+            <option value="Instável">Instável</option>
+        </select>
+
+        <label>Ferramentas disponíveis e em condições de trabalho?</label>
+        <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="ferramentas" value="Sim" checked onclick="salvarOffline()"> Sim</label>
+            <label class="radio-option"><input type="radio" name="ferramentas" value="Não" onclick="salvarOffline()"> Não</label>
+        </div>
+
+        <label>Condições de Segurança Atendidas?</label>
+        <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="seguranca" value="Sim" checked onclick="salvarOffline()"> Sim</label>
+            <label class="radio-option"><input type="radio" name="seguranca" value="Não" onclick="salvarOffline()"> Não</label>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>4.1 STATUS DAS ATIVIDADES</h2>
+        <div id="container-atividades"></div>
+    </div>
+
+    <div class="card">
+        <h2>NARRATIVAS E PREVISÃO</h2>
+        <label>Ocorrências Registradas:</label>
+        <textarea id="ocorrencias" rows="3" oninput="salvarOffline()">Não foram registradas ocorrências no período.</textarea>
+
+        <label>Interferências a serem tratadas pelo Cliente:</label>
+        <textarea id="interferencias" rows="3" oninput="salvarOffline()">Nenhuma interferência externa mapeada.</textarea>
+
+        <label>Atividades previstas para o próximo dia:</label>
+        <textarea id="previsao" rows="3" oninput="salvarOffline()"></textarea>
+    </div>
+
+    <button class="btn btn-export" onclick="exportarParaExcel()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
+
+    <script>
+        // Lista oficial de atividades sincronizada rigidamente com o seu Excel
+        const atividades = [
+            "Mobilização", "Abertura e Preparo do solo", "Instalação de eletrodutos", 
+            "Base de concreto/suporte carregadores", "Fixação dos carregadores", 
+            "Conexões elétricas", "Configuração e startup ", "Recomposição do solo"
+        ];
+
+        // Renderiza a matriz de atividades na tela de forma elegante
+        const container = document.getElementById('container-atividades');
+        atividades.forEach((ativ, index) => {
+            let html = `
+                <div class="matrix-row">
+                    <div class="matrix-title">${ativ}</div>
+                    <select id="ativ_${index}" onchange="salvarOffline()">
+                        <option value="Não concluída">Não concluída</option>
+                        <option value="Em andamento">Em andamento</option>
+                        <option value="Concluída">Concluída</option>
+                        <option value="Interrompida">Interrompida</option>
+                    </select>
+                </div>`;
+            container.innerHTML += html;
+        });
+
+        // Grava os dados na memória do telemóvel a cada caractere digitado (Segurança 100% Offline)
+        function salvarOffline() {
+            let dados = {
+                local_obra: document.getElementById('local_obra').value,
+                data_obra: document.getElementById('data_obra').value,
+                engenheiro: document.getElementById('engenheiro').value,
+                clima: document.getElementById('clima').value,
+                ferramentas: document.querySelector('input[name="ferramentas"]:checked').value,
+                seguranca: document.querySelector('input[name="seguranca"]:checked').value,
+                ocorrencias: document.getElementById('ocorrencias').value,
+                interferencias: document.getElementById('interferencias').value,
+                previsao: document.getElementById('previsao').value,
+                status_ativ: atividades.map((_, idx) => document.getElementById(`ativ_${idx}`).value)
+            };
+            localStorage.setItem('tenergy_rdo_cache', JSON.stringify(dados));
+        }
+
+        // Recupera os dados caso o utilizador feche o app sem querer
+        window.onload = function() {
+            let cache = localStorage.getItem('tenergy_rdo_cache');
+            if(cache) {
+                let dados = JSON.parse(cache);
+                document.getElementById('local_obra').value = dados.local_obra || '';
+                document.getElementById('data_obra').value = dados.data_obra || '';
+                document.getElementById('engenheiro').value = dados.engenheiro || '';
+                document.getElementById('clima').value = dados.clima || 'Ensolarado';
+                document.getElementById('ocorrencias').value = dados.ocorrencias || '';
+                document.getElementById('interferencias').value = dados.interferencias || '';
+                document.getElementById('previsao').value = dados.previsao || '';
+                
+                // Trata os radios
+                document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
+                document.querySelector(`input[name="seguranca"][value="${dados.seguranca}"]`).checked = true;
+
+                // Trata as atividades
+                if(dados.status_ativ) {
+                    dados.status_ativ.forEach((val, idx) => {
+                        if(document.getElementById(`ativ_${idx}`)) document.getElementById(`ativ_${idx}`).value = val;
+                    });
+                }
+            }
+        };
+
+        // COMPILA OS DADOS E GERA O ARQUIVO COMPATÍVEL COM O SEU EXCEL MASTER
+        function exportarParaExcel() {
+            let local = document.getElementById('local_obra').value.toUpperCase();
+            if(!local) { alert("Por favor, digite a sigla da Obra (Ex: SAU01) antes de exportar!"); return; }
+
+            // Cabeçalhos idênticos à nova estrutura que o seu Excel lê
+            let csvHeaders = ["Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", "Interferências a serem tratadas", "Atividades previstas para o próximo dia"];
+            let csvValues = [
+                document.getElementById('data_obra').value,
+                local,
+                document.getElementById('engenheiro').value,
+                document.getElementById('clima').value,
+                document.querySelector('input[name="ferramentas"]:checked').value,
+                document.querySelector('input[name="seguranca"]:checked').value,
+                `"${document.getElementById('ocorrencias').value.replace(/"/g, '""')}"`,
+                `"${document.getElementById('interferencias').value.replace(/"/g, '""')}"`,
+                `"${document.getElementById('previsao').value.replace(/"/g, '""')}"`
+            ];
+
+            // Injeta as colunas das atividades com a marcação "##### " exigida pela macro do Excel
+            atividades.forEach((ativ, idx) => {
+                csvHeaders.push(`##### ${ativ}`);
+                csvValues.push(document.getElementById(`ativ_${idx}`).value);
+            });
+
+            // Monta o ficheiro CSV em formato string (separado por vírgulas)
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                + csvHeaders.join(",") + "\n" 
+                + csvValues.join(",");
+
+            // Cria o gatilho invisível de download no telemóvel
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `RDO_${local}_${document.getElementById('data_obra').value}.csv`);
+            document.body.appendChild(link);
+            
+            link.click(); // Faz o download do ficheiro para a pasta do telemóvel
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
