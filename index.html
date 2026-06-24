@@ -134,8 +134,8 @@
                 document.getElementById('data_obra').value = dados.data_obra || '';
                 document.getElementById('engenheiro').value = dados.engenheiro || '';
                 document.getElementById('clima').value = dados.clima || 'Ensolarado';
-                document.getElementById('ocorrencias').value = dados.ocorrencias || '';
-                document.getElementById('interferencias').value = dados.interferencias || '';
+                document.getElementById('ocorrencias').value = dados.ocorrencias || 'Não foram registradas ocorrências no período.';
+                document.getElementById('interferencias').value = dados.interferencias || 'Nenhuma interferência externa mapeada.';
                 document.getElementById('previsao').value = dados.previsao || '';
                 
                 if(dados.ferramentas) document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
@@ -160,34 +160,49 @@
 
         function exportarParaGitTenergy() {
             let local = document.getElementById('local_obra').value.toUpperCase().trim();
-            if(!local) { alert("Por favor, digite a identificação da Obra antes de exportar!"); return; }
+            let dataObra = document.getElementById('data_obra').value;
+            let eng = document.getElementById('engenheiro').value;
+            let clima = document.getElementById('clima').value;
+            let fer = document.querySelector('input[name="ferramentas"]:checked').value;
+            let seg = document.querySelector('input[name="seguranca"]:checked').value;
+            let ocor = document.getElementById('ocorrencias').value;
+            let interf = document.getElementById('interferencias').value;
+            let prev = document.getElementById('previsao').value;
 
+            if(!local) { alert("Por favor, digite o Local da Obra antes de exportar!"); return; }
+
+            // 1. Cria os Cabeçalhos estruturados
             let csvHeaders = ["Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", "Interferências a serem tratadas", "Atividades previstas para o próximo dia"];
+            
+            // 2. Cria as Variáveis da Linha de Dados correspondente (Limpa quebras de linha para não quebrar o CSV)
             let csvValues = [
-                document.getElementById('data_obra').value,
+                dataObra,
                 local,
-                document.getElementById('engenheiro').value,
-                document.getElementById('clima').value,
-                document.querySelector('input[name="ferramentas"]:checked').value,
-                document.querySelector('input[name="seguranca"]:checked').value,
-                `"${document.getElementById('ocorrencias').value.replace(/"/g, '""')}"`,
-                `"${document.getElementById('interferencias').value.replace(/"/g, '""')}"`,
-                `"${document.getElementById('previsao').value.replace(/"/g, '""')}"`
+                eng.replace(/,/g, " "),
+                clima,
+                fer,
+                seg,
+                `"${ocor.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+                `"${interf.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+                `"${prev.replace(/"/g, '""').replace(/\n/g, ' ')}"`
             ];
 
+            // 3. Injeta a matriz dinâmica de atividades no mesmo arquivo
             atividades.forEach((ativ, idx) => {
                 csvHeaders.push(`##### ${ativ}`);
                 csvValues.push(document.getElementById(`ativ_${idx}`).value);
             });
 
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-                + csvHeaders.join(",") + "\n" 
-                + csvValues.join(",");
+            // 4. Une o cabeçalho e os dados com quebras de linha reais (\r\n) garantindo a Linha 2
+            let csvContent = csvHeaders.join(",") + "\r\n" + csvValues.join(",") + "\r\n";
 
-            let encodedUri = encodeURI(csvContent);
+            // 5. Gera o download usando Blob com codificação UTF-8 explícita (corrige acentos)
+            let blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
+            let url = URL.createObjectURL(blob);
+            
             let link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `RDO_${local}_${document.getElementById('data_obra').value}.csv`);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `RDO_${local}_${dataObra}.csv`);
             document.body.appendChild(link);
             
             link.click();
