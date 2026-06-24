@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDO Campo - Tenergy</title>
+    <title>Git Tenergy - RDO Campo</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root { --verde: #22703f; }
@@ -24,13 +24,13 @@
 <body>
 
     <div class="card">
-        <h1 style="color: var(--verde); text-align: center; margin: 0; font-size: 1.5rem;">TENERGY - RDO OFFLINE</h1>
+        <h1 style="color: var(--verde); text-align: center; margin: 0; font-size: 1.4rem;">GIT TENERGY - OPERAÇÃO OFFLINE</h1>
     </div>
 
     <div class="card">
         <h2>1. IDENTIFICAÇÃO</h2>
         <label>Local de Obra (Base e Concessão):</label>
-        <input type="text" id="local_obra" placeholder="Ex: SAU01 - Tietê" oninput="salvarOffline()">
+        <input type="text" id="local_obra" placeholder="Ex: SAU01" oninput="salvarOffline()">
 
         <label>Data da Obra:</label>
         <input type="date" id="data_obra" onchange="salvarOffline()">
@@ -79,10 +79,9 @@
         <textarea id="previsao" rows="3" oninput="salvarOffline()"></textarea>
     </div>
 
-    <button class="btn btn-export" onclick="exportarParaExcel()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
+    <button class="btn btn-export" onclick="exportarParaGitTenergy()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
 
     <script>
-        // Registrar o ativador Offline (Service Worker)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('serviceWorker.js');
         }
@@ -121,11 +120,11 @@
                 previsao: document.getElementById('previsao').value,
                 status_ativ: atividades.map((_, idx) => document.getElementById(`ativ_${idx}`).value)
             };
-            localStorage.setItem('tenergy_rdo_cache', JSON.stringify(dados));
+            localStorage.setItem('git_tenergy_cache', JSON.stringify(dados));
         }
 
         window.onload = function() {
-            let cache = localStorage.getItem('tenergy_rdo_cache');
+            let cache = localStorage.getItem('git_tenergy_cache');
             if(cache) {
                 let dados = JSON.parse(cache);
                 document.getElementById('local_obra').value = dados.local_obra || '';
@@ -136,25 +135,23 @@
                 document.getElementById('interferencias').value = dados.interferencias || '';
                 document.getElementById('previsao').value = dados.previsao || '';
                 
-                document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
-                document.querySelector(`input[name="seguranca"][value="${dados.seguranca}"]`).checked = true;
+                if(dados.ferramentas) document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
+                if(dados.seguranca) document.querySelector(`input[name="seguranca"][value="${dados.seguranca}"]`).checked = true;
 
                 if(dados.status_ativ) {
                     dados.status_ativ.forEach((val, idx) => {
                         if(document.getElementById(`ativ_${idx}`)) {
-                            // Converte caches antigos de "Não concluída" para "Não iniciada" automaticamente
-                            document.getElementById(`ativ_${idx}`).value = (val === "Não concluída") ? "Não iniciada" : val;
+                            document.getElementById(`ativ_${idx}`).value = val;
                         }
                     });
                 }
             }
         };
 
-        function exportarParaExcel() {
-            let local = document.getElementById('local_obra').value.toUpperCase();
-            if(!local) { alert("Por favor, digite a sigla da Obra (Ex: SAU01) antes de exportar!"); return; }
+        function exportarParaGitTenergy() {
+            let local = document.getElementById('local_obra').value.toUpperCase().trim();
+            if(!local) { alert("Por favor, digite a identificação da Obra antes de exportar!"); return; }
 
-            // Cabeçalhos compatíveis com o leitor do Excel
             let csvHeaders = ["Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", "Interferências a serem tratadas", "Atividades previstas para o próximo dia"];
             let csvValues = [
                 document.getElementById('data_obra').value,
