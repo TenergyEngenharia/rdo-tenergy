@@ -20,6 +20,7 @@
         .btn { color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-export { background: #007bff; }
         .btn-clear { background: var(--vermelho); font-size: 0.9rem; padding: 10px; margin-bottom: 15px; }
+        .required::after { content: " *"; color: red; }
     </style>
 </head>
 <body>
@@ -31,20 +32,20 @@
     <button class="btn btn-clear" onclick="limparFormulario()">LIMPAR FORMULÁRIO (Resetar Padrão)</button>
 
     <div class="card">
-        <h2>1. IDENTIFICAÇÃO</h2>
-        <label>Local de Obra (Base e Concessão):</label>
+        <h2>1. IDENTIFICAÇÃO (Offline)</h2>
+        <label class="required">Local de Obra (Base e Concessão):</label>
         <input type="text" id="local_obra" placeholder="Ex: SAU01" oninput="salvarOffline()">
 
-        <label>Data da Obra:</label>
+        <label class="required">Data da Obra:</label>
         <input type="date" id="data_obra" onchange="salvarOffline()">
 
-        <label>Engenheiro Responsável:</label>
-        <input type="text" id="engenheiro" placeholder="Nome do responsável" oninput="salvarOffline()">
+        <label class="required">Nome do Operador (Preenchendo no campo):</label>
+        <input type="text" id="operador" placeholder="Quem está preenchendo o RDO" oninput="salvarOffline()">
     </div>
 
     <div class="card">
         <h2>3. CHECKLIST INICIAL</h2>
-        <label>Condições Climáticas:</label>
+        <label class="required">Condições Climáticas:</label>
         <select id="clima" onchange="salvarOffline()">
             <option value="Ensolarado">Ensolarado</option>
             <option value="Nublado">Nublado</option>
@@ -52,13 +53,13 @@
             <option value="Instável">Instável</option>
         </select>
 
-        <label>Ferramentas disponíveis e em condições de trabalho?</label>
+        <label class="required">Ferramentas disponíveis e em condições de trabalho?</label>
         <div class="radio-group">
             <label class="radio-option"><input type="radio" name="ferramentas" value="Sim" checked onclick="salvarOffline()"> Sim</label>
             <label class="radio-option"><input type="radio" name="ferramentas" value="Não" onclick="salvarOffline()"> Não</label>
         </div>
 
-        <label>Condições de Segurança Atendidas?</label>
+        <label class="required">Condições de Segurança Atendidas?</label>
         <div class="radio-group">
             <label class="radio-option"><input type="radio" name="seguranca" value="Sim" checked onclick="salvarOffline()"> Sim</label>
             <label class="radio-option"><input type="radio" name="seguranca" value="Não" onclick="salvarOffline()"> Não</label>
@@ -84,26 +85,19 @@
         <label>4.5 Interferências a serem tratadas pelo Cliente:</label>
         <textarea id="interferencias" rows="3" oninput="salvarOffline()">Nenhuma interferência externa mapeada.</textarea>
 
-        <label>4.6 Atividades previstas para o próximo dia:</label>
+        <label class="required">4.6 Atividades previstas para o próximo dia:</label>
         <textarea id="previsao" rows="3" oninput="salvarOffline()"></textarea>
     </div>
 
     <button class="btn btn-export" onclick="exportarParaGitTenergy()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('serviceWorker.js');
-        }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('serviceWorker.js'); }
 
-        const atividades = [
-            "Mobilização", "Abertura e Preparo do solo", "Instalação de eletrodutos", 
-            "Base de concreto/suporte carregadores", "Fixação dos carregadores", 
-            "Conexões elétricas", "Configuração e startup ", "Recomposição do solo"
-        ];
-
+        const atividades = ["Mobilização", "Abertura e Preparo do solo", "Instalação de eletrodutos", "Base de concreto/suporte carregadores", "Fixação dos carregadores", "Conexões elétricas", "Configuração e startup ", "Recomposição do solo"];
         const container = document.getElementById('container-atividades');
         atividades.forEach((ativ, index) => {
-            let html = `
+            container.innerHTML += `
                 <div class="matrix-row">
                     <div class="matrix-title">${ativ}</div>
                     <select id="ativ_${index}" onchange="salvarOffline()">
@@ -113,14 +107,13 @@
                         <option value="Interrompida">Interrompida</option>
                     </select>
                 </div>`;
-            container.innerHTML += html;
         });
 
         function salvarOffline() {
             let dados = {
                 local_obra: document.getElementById('local_obra').value,
                 data_obra: document.getElementById('data_obra').value,
-                engenheiro: document.getElementById('engenheiro').value,
+                operador: document.getElementById('operador').value,
                 clima: document.getElementById('clima').value,
                 ferramentas: document.querySelector('input[name="ferramentas"]:checked').value,
                 seguranca: document.querySelector('input[name="seguranca"]:checked').value,
@@ -140,7 +133,7 @@
                 let dados = JSON.parse(cache);
                 document.getElementById('local_obra').value = dados.local_obra || '';
                 document.getElementById('data_obra').value = dados.data_obra || '';
-                document.getElementById('engenheiro').value = dados.engenheiro || '';
+                document.getElementById('operador').value = dados.operador || '';
                 document.getElementById('clima').value = dados.clima || 'Ensolarado';
                 document.getElementById('ocorrencias').value = dados.ocorrencias || 'Não foram registradas ocorrências no período.';
                 document.getElementById('fora_escopo').value = dados.fora_escopo || 'Sem atividades fora do escopo';
@@ -150,14 +143,7 @@
                 
                 if(dados.ferramentas) document.querySelector(`input[name="ferramentas"][value="${dados.ferramentas}"]`).checked = true;
                 if(dados.seguranca) document.querySelector(`input[name="seguranca"][value="${dados.seguranca}"]`).checked = true;
-
-                if(dados.status_ativ) {
-                    dados.status_ativ.forEach((val, idx) => {
-                        if(document.getElementById(`ativ_${idx}`)) {
-                            document.getElementById(`ativ_${idx}`).value = val;
-                        }
-                    });
-                }
+                if(dados.status_ativ) { dados.status_ativ.forEach((val, idx) => { if(document.getElementById(`ativ_${idx}`)) document.getElementById(`ativ_${idx}`).value = val; }); }
             }
         };
 
@@ -171,7 +157,15 @@
         function exportarParaGitTenergy() {
             let local = document.getElementById('local_obra').value.toUpperCase().trim();
             let dataObra = document.getElementById('data_obra').value;
-            let eng = document.getElementById('engenheiro').value;
+            let op = document.getElementById('operador').value.trim();
+            let prev = document.getElementById('previsao').value.trim();
+
+            // VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS
+            if(!local || !dataObra || !op || !prev) { 
+                alert("ERRO DE EXPORTAÇÃO: Preencha todos os campos obrigatórios (marcados com *) antes de gerar o arquivo."); 
+                return; 
+            }
+
             let clima = document.getElementById('clima').value;
             let fer = document.querySelector('input[name="ferramentas"]:checked').value;
             let seg = document.querySelector('input[name="seguranca"]:checked').value;
@@ -179,26 +173,16 @@
             let foraEscopo = document.getElementById('fora_escopo').value;
             let obs = document.getElementById('observacoes').value;
             let interf = document.getElementById('interferencias').value;
-            let prev = document.getElementById('previsao').value;
 
-            if(!local) { alert("Por favor, digite o Local da Obra antes de exportar!"); return; }
-
-            // 1. Definição estrita do Cabeçalho estruturado com os novos campos
             let csvHeaders = [
-                "Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", 
+                "Data da Obra", "Local da Obra", "Nome do Operador", "condições Climáticas", 
                 "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", 
                 "Atividades fora do escopo", "Observações do Operador", "Interferências a serem tratadas", 
                 "Atividades previstas para o próximo dia"
             ];
             
-            // 2. Limpeza de aspas e quebras de linha para a Linha 2 de valores
             let csvValues = [
-                dataObra,
-                local,
-                eng.replace(/,/g, " "),
-                clima,
-                fer,
-                seg,
+                dataObra, local, op.replace(/,/g, " "), clima, fer, seg,
                 `"${ocor.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
                 `"${foraEscopo.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
                 `"${obs.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
@@ -206,14 +190,12 @@
                 `"${prev.replace(/"/g, '""').replace(/\n/g, ' ')}"`
             ];
 
-            // 3. Matriz dinâmica de atividades
             atividades.forEach((ativ, idx) => {
                 csvHeaders.push(`##### ${ativ}`);
                 csvValues.push(document.getElementById(`ativ_${idx}`).value);
             });
 
             let csvContent = csvHeaders.join(",") + "\r\n" + csvValues.join(",") + "\r\n";
-
             let blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
             let url = URL.createObjectURL(blob);
             
