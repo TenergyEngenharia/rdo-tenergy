@@ -1,21 +1,21 @@
-const CACHE_NAME = 'tenergy-rdo-v2';
+const CACHE_NAME = 'tenergy-rdo-v3';
 
 const ASSETS = [
   'index.html',
   'manifest.json',
-  'logo_tenergy.png'
+  'logo-preto.png',
+  'logo-branca.png',
+  'logo-simbolo.png'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  // Força ativação imediata sem esperar abas serem fechadas
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
-  // Remove caches antigos (ex: tenergy-rdo-v1)
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
