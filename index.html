@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <h2 style="text-align: center; color: var(--verde);">Git Tenergy - RDO Campo</h2>
+    <title>Git Tenergy - RDO Campo</title> 
     <link rel="manifest" href="manifest.json">
     <style>
         /* ── TOKENS ──────────────────────────────────────────────── */
@@ -180,7 +180,7 @@
         .matrix-row {
             background: var(--row-bg);
             padding: 10px;
-            border-left: 4px solid var(--border); /* borda dinâmica à esquerda */
+            border-left: 4px solid var(--border);
             border-top: 1px solid var(--row-border);
             border-right: 1px solid var(--row-border);
             border-bottom: 1px solid var(--row-border);
@@ -189,7 +189,6 @@
             transition: background 0.25s, border-left-color 0.25s;
         }
 
-        /* Status colors — aplicados via JS na border-left */
         .matrix-row.status-concluida    { border-left-color: #22703f; }
         .matrix-row.status-andamento    { border-left-color: #d97706; }
         .matrix-row.status-nao-iniciada { border-left-color: #9ca3af; }
@@ -221,13 +220,11 @@
         }
         .btn-clear:hover { background: #9e2020; }
 
-        /* ── MISC ────────────────────────────────────────────────── */
         .required::after { content: " *"; color: red; }
     </style>
 </head>
 <body>
 
-    <!-- THEME TOGGLE ──────────────────────────────────────── -->
     <div class="theme-bar">
         <span class="theme-label">Modo Escuro</span>
         <label class="theme-switch" aria-label="Alternar tema escuro">
@@ -236,17 +233,15 @@
         </label>
     </div>
 
-    <!-- HEADER COM LOGO DINÂMICA ──────────────────────────── -->
     <div class="header-card">
-        <!-- Logo modo claro (preta) -->
         <img src="logo-preto.png"  alt="Logo Tenergy" class="logo-header logo-clara">
-        <!-- Logo modo escuro (branca) -->
         <img src="logo-branca.png" alt="Logo Tenergy" class="logo-header logo-escura">
     </div>
 
+    <h2 style="text-align: center; color: var(--verde); margin-top: 5px;">RDO - Offline</h2>
+
     <button class="btn btn-clear" onclick="limparFormulario()">LIMPAR FORMULÁRIO (Resetar Padrão)</button>
 
-    <!-- 1. IDENTIFICAÇÃO ──────────────────────────────────── -->
     <div class="card">
         <h2>1. IDENTIFICAÇÃO </h2>
 
@@ -260,7 +255,6 @@
         <input type="text" id="operador" placeholder="Quem está preenchendo o RDO" oninput="salvarOffline()">
     </div>
 
-    <!-- 3. CHECKLIST INICIAL ──────────────────────────────── -->
     <div class="card">
         <h2>3. CHECKLIST INICIAL</h2>
 
@@ -285,13 +279,11 @@
         </div>
     </div>
 
-    <!-- 4.1 STATUS DAS ATIVIDADES ─────────────────────────── -->
     <div class="card">
         <h2>4.1 STATUS DAS ATIVIDADES</h2>
         <div id="container-atividades"></div>
     </div>
 
-    <!-- REGISTRO DE ATIVIDADES ───────────────────────────── -->
     <div class="card">
         <h2>REGISTRO DE ATIVIDADES</h2>
 
@@ -313,14 +305,11 @@
 
     <button class="btn btn-export" onclick="exportarParaGitTenergy()">📥 GERAR ARQUIVO RDO (Fazer Download)</button>
 
-    <!-- ── SCRIPTS ──────────────────────────────────────────────── -->
     <script>
-        /* ── Service Worker ──────────────────────────────────────── */
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js');
         }
 
-        /* ── Atividades ──────────────────────────────────────────── */
         const atividades = [
             "Mobilização",
             "Abertura e Preparo do solo",
@@ -332,7 +321,6 @@
             "Recomposição do solo"
         ];
 
-        /* Mapeia valor do select → classe CSS de cor */
         const STATUS_CLASSES = {
             "Concluída":    "status-concluida",
             "Em andamento": "status-andamento",
@@ -345,7 +333,6 @@
             const row    = document.getElementById(`row_${idx}`);
             if (!select || !row) return;
 
-            // Remove todas as classes de status antes de aplicar a nova
             Object.values(STATUS_CLASSES).forEach(c => row.classList.remove(c));
             const classe = STATUS_CLASSES[select.value];
             if (classe) row.classList.add(classe);
@@ -365,7 +352,6 @@
                 </div>`;
         });
 
-        /* ── Dark Theme ──────────────────────────────────────────── */
         const toggle = document.getElementById('theme-toggle');
         const html   = document.documentElement;
 
@@ -382,7 +368,6 @@
             aplicarTema(escuro);
         });
 
-        /* ── LocalStorage (dados do formulário) ──────────────────── */
         function salvarOffline() {
             const dados = {
                 local_obra:     document.getElementById('local_obra').value,
@@ -401,7 +386,6 @@
             localStorage.setItem('git_tenergy_cache', JSON.stringify(dados));
         }
 
-        /* ── Carrega dados salvos ao abrir ───────────────────────── */
         window.addEventListener('load', () => {
             const raw = localStorage.getItem('git_tenergy_cache');
             if (!raw) return;
@@ -430,13 +414,12 @@
                     const el = document.getElementById(`ativ_${idx}`);
                     if (el) {
                         el.value = val;
-                        atualizarCorAtividade(idx); // atualiza a cor ao restaurar
+                        atualizarCorAtividade(idx);
                     }
                 });
             }
         });
 
-        /* ── Limpar formulário ───────────────────────────────────── */
         function limparFormulario() {
             if (confirm("Tem certeza que deseja limpar todo o formulário e voltar ao padrão?")) {
                 localStorage.removeItem('git_tenergy_cache');
@@ -444,7 +427,6 @@
             }
         }
 
-        /* ── Exportar CSV ────────────────────────────────────────── */
         function exportarParaGitTenergy() {
             const local    = document.getElementById('local_obra').value.toUpperCase().trim();
             const dataObra = document.getElementById('data_obra').value;
