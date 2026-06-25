@@ -3,14 +3,15 @@
   "short_name": "RDO Tenergy",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#22703f",
+  "background_color": "#ffffff",
   "theme_color": "#22703f",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "logo_tenergy.png",
-      "sizes": "192 x 192",
-      "type": "image/png"
+      "src": "logo-simbolo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
