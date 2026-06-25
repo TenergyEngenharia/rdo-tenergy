@@ -28,7 +28,7 @@
         <h1 style="color: var(--verde); text-align: center; margin: 0; font-size: 1.4rem;">GIT TENERGY - OPERAÇÃO OFFLINE</h1>
     </div>
 
-    <button class="btn btn-clear" onclick="limparFormulario()">🧹 LIMPAR FORMULÁRIO (Resetar Padrão)</button>
+    <button class="btn btn-clear" onclick="limparFormulario()">LIMPAR FORMULÁRIO (Resetar Padrão)</button>
 
     <div class="card">
         <h2>1. IDENTIFICAÇÃO</h2>
@@ -72,13 +72,19 @@
 
     <div class="card">
         <h2>REGISTRO DE ATIVIDADES</h2>
-        <label>Ocorrências Registradas:</label>
+        <label>4.2 Ocorrências Registradas:</label>
         <textarea id="ocorrencias" rows="3" oninput="salvarOffline()">Não foram registradas ocorrências no período.</textarea>
 
-        <label>Interferências a serem tratadas pelo Cliente:</label>
+        <label>4.3 Atividades fora do escopo:</label>
+        <textarea id="fora_escopo" rows="3" oninput="salvarOffline()">Sem atividades fora do escopo</textarea>
+
+        <label>4.4 Observações do Operador:</label>
+        <textarea id="observacoes" rows="3" oninput="salvarOffline()">Sem observações</textarea>
+
+        <label>4.5 Interferências a serem tratadas pelo Cliente:</label>
         <textarea id="interferencias" rows="3" oninput="salvarOffline()">Nenhuma interferência externa mapeada.</textarea>
 
-        <label>Atividades previstas para o próximo dia:</label>
+        <label>4.6 Atividades previstas para o próximo dia:</label>
         <textarea id="previsao" rows="3" oninput="salvarOffline()"></textarea>
     </div>
 
@@ -119,6 +125,8 @@
                 ferramentas: document.querySelector('input[name="ferramentas"]:checked').value,
                 seguranca: document.querySelector('input[name="seguranca"]:checked').value,
                 ocorrencias: document.getElementById('ocorrencias').value,
+                fora_escopo: document.getElementById('fora_escopo').value,
+                observacoes: document.getElementById('observacoes').value,
                 interferencias: document.getElementById('interferencias').value,
                 previsao: document.getElementById('previsao').value,
                 status_ativ: atividades.map((_, idx) => document.getElementById(`ativ_${idx}`).value)
@@ -135,6 +143,8 @@
                 document.getElementById('engenheiro').value = dados.engenheiro || '';
                 document.getElementById('clima').value = dados.clima || 'Ensolarado';
                 document.getElementById('ocorrencias').value = dados.ocorrencias || 'Não foram registradas ocorrências no período.';
+                document.getElementById('fora_escopo').value = dados.fora_escopo || 'Sem atividades fora do escopo';
+                document.getElementById('observacoes').value = dados.observacoes || 'Sem observações';
                 document.getElementById('interferencias').value = dados.interferencias || 'Nenhuma interferência externa mapeada.';
                 document.getElementById('previsao').value = dados.previsao || '';
                 
@@ -166,15 +176,22 @@
             let fer = document.querySelector('input[name="ferramentas"]:checked').value;
             let seg = document.querySelector('input[name="seguranca"]:checked').value;
             let ocor = document.getElementById('ocorrencias').value;
+            let foraEscopo = document.getElementById('fora_escopo').value;
+            let obs = document.getElementById('observacoes').value;
             let interf = document.getElementById('interferencias').value;
             let prev = document.getElementById('previsao').value;
 
             if(!local) { alert("Por favor, digite o Local da Obra antes de exportar!"); return; }
 
-            // 1. Cria os Cabeçalhos estruturados
-            let csvHeaders = ["Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", "Interferências a serem tratadas", "Atividades previstas para o próximo dia"];
+            // 1. Definição estrita do Cabeçalho estruturado com os novos campos
+            let csvHeaders = [
+                "Data da Obra", "Local da Obra", "Engenheiro responsável", "condições Climáticas", 
+                "Ferramentas disponíveis", "Condições de Segurança", "Ocorrências registradas", 
+                "Atividades fora do escopo", "Observações do Operador", "Interferências a serem tratadas", 
+                "Atividades previstas para o próximo dia"
+            ];
             
-            // 2. Cria as Variáveis da Linha de Dados correspondente (Limpa quebras de linha para não quebrar o CSV)
+            // 2. Limpeza de aspas e quebras de linha para a Linha 2 de valores
             let csvValues = [
                 dataObra,
                 local,
@@ -183,20 +200,20 @@
                 fer,
                 seg,
                 `"${ocor.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+                `"${foraEscopo.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+                `"${obs.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
                 `"${interf.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
                 `"${prev.replace(/"/g, '""').replace(/\n/g, ' ')}"`
             ];
 
-            // 3. Injeta a matriz dinâmica de atividades no mesmo arquivo
+            // 3. Matriz dinâmica de atividades
             atividades.forEach((ativ, idx) => {
                 csvHeaders.push(`##### ${ativ}`);
                 csvValues.push(document.getElementById(`ativ_${idx}`).value);
             });
 
-            // 4. Une o cabeçalho e os dados com quebras de linha reais (\r\n) garantindo a Linha 2
             let csvContent = csvHeaders.join(",") + "\r\n" + csvValues.join(",") + "\r\n";
 
-            // 5. Gera o download usando Blob com codificação UTF-8 explícita (corrige acentos)
             let blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
             let url = URL.createObjectURL(blob);
             
@@ -204,7 +221,6 @@
             link.setAttribute("href", url);
             link.setAttribute("download", `RDO_${local}_${dataObra}.csv`);
             document.body.appendChild(link);
-            
             link.click();
             document.body.removeChild(link);
         }
